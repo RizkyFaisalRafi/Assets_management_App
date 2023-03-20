@@ -17,7 +17,7 @@ class LoginPage extends StatelessWidget {
     bool isValid = formKey.currentState!.validate();
     if (isValid) {
       // Tervalidasi
-      Uri url = Uri.parse('${AppConstant.bareURL}/user/login.php');
+      Uri url = Uri.parse('${AppConstant.baseURL}/user/login.php');
 
       // Method POST
       http.post(url, body: {
