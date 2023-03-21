@@ -37,8 +37,12 @@ class LoginPage extends StatelessWidget {
         bool success = respondBody['success'] ?? false;
         if (success) {
           DInfo.toastSuccess('Login Success');
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (context) => const HomePage()));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const HomePage(),
+            ),
+          );
         } else {
           DInfo.toastError('Login Failed');
         }
