@@ -59,7 +59,9 @@ class _CreateAssetPageState extends State<CreateAssetPage> {
     }
 
     // If have image, Go on
-    Uri url = Uri.parse('${AppConstant.baseURL2}/assets/create.php');
+    Uri url = Uri.parse(
+      '${AppConstant.baseURL2}/assets/create.php',
+    );
 
     try {
       // Method POST
