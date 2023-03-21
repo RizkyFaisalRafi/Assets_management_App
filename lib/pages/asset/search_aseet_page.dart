@@ -2,80 +2,40 @@ import 'dart:convert';
 
 import 'package:asset_management/config/app_constant.dart';
 import 'package:asset_management/models/asset_model.dart';
-import 'package:asset_management/pages/asset/create_asset_page.dart';
-import 'package:asset_management/pages/asset/search_aseet_page.dart';
-import 'package:asset_management/pages/asset/update_asset_page.dart';
-import 'package:d_info/d_info.dart';
 import 'package:d_method/d_method.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class SearchAssetPage extends StatefulWidget {
+  const SearchAssetPage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<SearchAssetPage> createState() => _SearchAssetPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _SearchAssetPageState extends State<SearchAssetPage> {
   List<AssetModel> assets = []; //
 
-  showMenuItem(AssetModel item) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return SimpleDialog(
-          title: Text(item.name),
-          children: [
-            ListTile(
-              onTap: () {
-                {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UpdateAssetPage(
-                        oldAsset: item,
-                      ),
-                    ),
-                  ).then((value) => readAssets());
-                }
-              },
-              horizontalTitleGap: 0, // Jarak leading dan tittle tidak jauh
-              title: const Text('Update'),
-              leading: const Icon(
-                Icons.edit,
-                color: Colors.blue,
-              ),
-            ),
-            ListTile(
-              onTap: () {
-                Navigator.pop(context);
-                deleteAsset(item);
-              },
-              horizontalTitleGap: 0, // Jarak leading dan tittle tidak jauh
-              title: const Text('Delete'),
-              leading: const Icon(
-                Icons.delete,
-                color: Colors.red,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  final edtSearch = TextEditingController();
 
-  readAssets() async {
+  searchAssets() async {
+    if (edtSearch.text == '') {
+      DMethod.printBasic('Stop because input empty');
+      return;
+    }
+
     assets.clear();
     setState(() {});
+
     Uri url = Uri.parse(
-      '${AppConstant.baseURL2}/assets/read.php',
+      '${AppConstant.baseURL2}/assets/search.php',
     );
 
     try {
       // Method POST
-      final response = await http.get(url);
+      final response = await http.post(url, body: {
+        'search': edtSearch.text,
+      });
       DMethod.printBasic('Execute request to API');
       DMethod.printResponse(response);
 
@@ -92,89 +52,43 @@ class _HomePageState extends State<HomePage> {
         List data = respondBody['data'];
         assets = data.map((e) => AssetModel.fromJson(e)).toList();
       }
+
       setState(() {});
     } catch (e) {
       DMethod.printTitle('Catch', e.toString());
     }
   }
 
-  deleteAsset(AssetModel item) async {
-    bool? isYes = await DInfo.dialogConfirmation(
-      context,
-      'Delete',
-      'Are You Sure Want to Delete ${item.name}?',
-    );
-    DMethod.printBasic(isYes.toString());
-    if (isYes ?? false) {
-      Uri url = Uri.parse(
-        '${AppConstant.baseURL2}/assets/delete.php',
-      );
-
-      try {
-        // Method POST
-        final response = await http.post(url, body: {
-          'id': item.id,
-          'image': item.image,
-        });
-        DMethod.printBasic('Execute request to API');
-        DMethod.printResponse(response);
-
-        debugPrint('Response body before decoding and casting to map: ');
-        debugPrint(response.body.toString());
-
-        Map respondBody = json.decode(response.body);
-
-        debugPrint('responseBody is: ');
-        debugPrint(respondBody.toString());
-
-        bool success = respondBody['success'] ?? false;
-        if (success) {
-          DInfo.toastSuccess('Success Delete Asset');
-          readAssets(); // Refresh data list assets
-        } else {
-          DInfo.toastError('Failed Delete Asset');
-        }
-      } catch (e) {
-        DMethod.printTitle('Catch', e.toString());
-      }
-    }
-  }
-
-  @override
-  void initState() {
-    readAssets();
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        titleSpacing: 0,
+        title: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.purple[100],
+            borderRadius: BorderRadius.circular(30),
+          ),
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: TextField(
+            controller: edtSearch,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              hintText: 'Search here...',
+              isDense: true,
+            ),
+          ),
+        ),
         centerTitle: true,
         actions: [
           IconButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SearchAssetPage(),
-                  ),
-                ).then((value) => readAssets());
+                searchAssets();
               },
               icon: const Icon(Icons.search)),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CreateAssetPage(),
-            ),
-          ).then((value) => readAssets()); // then akan otomatis refresh
-        },
-        child: const Icon(Icons.add),
       ),
       body: assets.isEmpty
           ? Center(
@@ -191,7 +105,7 @@ class _HomePageState extends State<HomePage> {
             )
           : RefreshIndicator(
               onRefresh: () async => {
-                readAssets(),
+                searchAssets(),
               },
               child: GridView.builder(
                 itemCount: assets.length,
@@ -258,9 +172,7 @@ class _HomePageState extends State<HomePage> {
                               color: Colors.purple[50],
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(4),
-                                onTap: () {
-                                  showMenuItem(item);
-                                },
+                                onTap: () {},
                                 splashColor: Colors.purpleAccent,
                                 child: const Padding(
                                   padding: EdgeInsets.symmetric(
